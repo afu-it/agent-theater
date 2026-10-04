@@ -53,10 +53,16 @@ test('the stage is one raster: pixel art, then a monitor with text', async () =>
   const edit = { ...EMPTY_SCENE, action: 'edit' as const, target: 'src/App.tsx' }
   // Frames tick every 125ms; the typing hand moves every second tick.
   expect(paint(edit, 0)).not.toBe(paint(edit, 2))
-  expect(screenLines(edit, 0)[0].text).toBe('$ vim src/App.tsx')
-  expect(screenLines({ ...edit, line: 'ubah sikit' }, 0)[2].text).toBe('// ubah sikit')
+  // The target shows once, in the title bar; the screen shows the work.
+  expect(screenLines(edit, 0).some(line => line.text.includes('src/App.tsx'))).toBe(false)
+  expect(screenLines({ ...edit, line: 'ubah sikit' }, 0)[1].text).toBe('// ubah sikit')
+  // Narration wraps onto a second line instead of being cut.
+  const long = screenLines({ ...edit, line: 'one two three four five six seven eight nine' }, 0, true, Infinity, 26)
+  expect(long[1].text).toBe('// one two three four')
+  // Past two lines it ends in an ellipsis.
+  expect(long[2].text).toBe('   five six seven eight\u2026')
   const failed = { ...EMPTY_SCENE, action: 'error' as const, detail: 'TypeError: boom' }
-  expect(screenLines(failed, 0)[1].text).toBe('TypeError: boom')
+  expect(screenLines(failed, 0)[0].text).toBe('\u2717 TypeError: boom')
 })
 
 test('Haiku replies are read as JSON, then plain text, and clipped', async () => {

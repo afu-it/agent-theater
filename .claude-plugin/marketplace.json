@@ -12,7 +12,7 @@
       "name": "agent-theater",
       "source": "./plugins/agent-theater",
       "description": "A pixel theater above the prompt: little orange Claude acts out each tool call at a desk while a monitor shows the command and Haiku narrates it.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": { "name": "afu-it" },
       "license": "MIT",
       "keywords": ["mod", "animation", "pixel-art", "status"]

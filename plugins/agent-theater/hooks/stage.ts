@@ -241,54 +241,71 @@ const TYPED = 'fix: handle empty rows'
 
 const ascii = (value: string) => value.replace(/[^\x20-\x7e]/g, '?')
 
+// Word-wraps the narration into two lines of `width` characters, the first
+// led by `// ` and the second indented to match, then types it out.
+function narrationLines(said: string, width: number, revealed: number): [string, string] {
+  const room = Math.max(8, width - 3)
+  const words = said.split(' ')
+  const lines: [string, string] = ['', '']
+  let row = 0
+  for (const word of words) {
+    const next = lines[row] ? `${lines[row]} ${word}` : word
+    if (next.length <= room || !lines[row]) lines[row] = next.slice(0, room)
+    else if (row === 0) {
+      row = 1
+      lines[1] = word.slice(0, room)
+    } else {
+      lines[1] = `${lines[1]}`.slice(0, room - 1) + '…'
+      break
+    }
+  }
+  const first = lines[0].slice(0, revealed)
+  const second = lines[1].slice(0, Math.max(0, revealed - lines[0].length - 1))
+  const isTyping = revealed < lines[0].length + 1 + lines[1].length
+  const caret = isTyping ? '▌' : ''
+  const onSecond = revealed > lines[0].length
+  return [`// ${first}${onSecond ? '' : caret}`, lines[1] || onSecond ? `   ${second}${onSecond ? caret : ''}` : '']
+}
+
+// What the monitor says: one line of work, then two lines of narration.
+// The file or command sits once, in the bezel's title bar.
 export function screenLines(
   scene: Scene,
   tick: number,
   isFlashOn = true,
   revealed = Number.POSITIVE_INFINITY,
+  width = MIN_SCREEN,
 ): [ScreenLine, ScreenLine, ScreenLine] {
   const frame = beat(tick)
-  const target = ascii(scene.target)
   const cursor = Math.floor(tick / 4) % 2 === 0 ? '_' : ' '
-  const plain = (text: string): ScreenLine => ({ text, color: INK.text })
+  const spinner = '|/-\\'[tick % 4]
   const said = ascii(scene.line)
-  const isTyping = revealed < said.length
-  const narration: ScreenLine = {
-    text: said ? `// ${said.slice(0, revealed)}${isTyping ? '\u258c' : ''}` : '',
-    color: scene.isOffTrack ? INK.offTrack : INK.comment,
-  }
-  switch (scene.action) {
-    case 'think':
-      return [{ text: `> ${cursor}`, color: INK.prompt }, plain(`thinking${'.'.repeat(frame % 4)}`), narration]
-    case 'read':
-      return [plain(`$ cat ${target}`), { text: SNIPPETS[frame % SNIPPETS.length]!, color: INK.code }, narration]
-    case 'edit':
-      return [
-        plain(`$ vim ${target}`),
-        { text: `+ ${TYPED.slice(0, frame % (TYPED.length + 1))}${cursor}`, color: INK.prompt },
-        narration,
-      ]
-    case 'test': {
-      const done = frame % 11
-      return [
-        plain(`$ ${target || 'npm test'}`),
-        { text: `[${'#'.repeat(done)}${'.'.repeat(10 - done)}] ${done * 10}%`, color: INK.prompt },
-        narration,
-      ]
+  const [first, second] = said ? narrationLines(said, width - 1, revealed) : ['', '']
+  const color = scene.isOffTrack ? INK.offTrack : INK.comment
+  const narration = (text: string): ScreenLine => ({ text, color })
+  const work = (): ScreenLine => {
+    switch (scene.action) {
+      case 'think':
+        return { text: `thinking${'.'.repeat(frame % 4)}`, color: INK.text }
+      case 'read':
+        return { text: SNIPPETS[frame % SNIPPETS.length]!, color: INK.code }
+      case 'edit':
+        return { text: `+ ${TYPED.slice(0, frame % (TYPED.length + 1))}${cursor}`, color: INK.prompt }
+      case 'test': {
+        const done = frame % 11
+        return { text: `[${'#'.repeat(done)}${'.'.repeat(10 - done)}] ${done * 10}% ${spinner}`, color: INK.prompt }
+      }
+      case 'run':
+        return { text: `running ${spinner}`, color: INK.cursor }
+      case 'error':
+        return { text: `${frame % 2 === 0 ? '✗' : ' '} ${ascii(scene.detail) || 'exit 1'}`, color: INK.error }
+      case 'ok':
+        return { text: isFlashOn ? '✓ OKAY' : '', color: INK.prompt }
+      case 'idle':
+        return { text: `$ ${cursor}`, color: INK.prompt }
     }
-    case 'run':
-      return [plain(`$ ${target}`), { text: `running ${'|/-\\'[tick % 4]}`, color: INK.cursor }, narration]
-    case 'error':
-      return [
-        { text: '✗ ERROR', color: INK.error },
-        { text: ascii(scene.detail) || 'exit 1', color: INK.error },
-        narration,
-      ]
-    case 'ok':
-      return [{ text: isFlashOn ? '✓ OKAY' : '', color: INK.prompt }, plain(''), narration]
-    case 'idle':
-      return [{ text: `$ ${cursor}`, color: INK.prompt }, plain(''), narration]
   }
+  return [work(), narration(first), narration(second)]
 }
 
 type Cell = [number, number, number]
@@ -374,7 +391,7 @@ function monitorCells(scene: Scene, tick: number, options: PaintOptions, screenW
     return deskRow(width, { from: middle - 4, to: middle + 4 })
   }
 
-  const content = screenLines(scene, tick, isFlashOn, revealed)[row - 1]!
+  const content = screenLines(scene, tick, isFlashOn, revealed, screenWidth)[row - 1]!
   // The error screen pulses red twice a second.
   const isAlarm = scene.action === 'error' && Math.floor(tick / 4) % 2 === 0
   // A new scene sweeps a lighter refresh line down the screen, one row a tick.

@@ -287,7 +287,7 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box key="monitor" flexDirection="column" borderStyle="round" borderColor={hex(scene.isOffTrack ? INK.offTrack : INK.frame)} paddingX={1}>
-        {screenLines(scene, live.frame, isFlashOn()).map(line => (
+        {screenLines(scene, live.frame, isFlashOn(), Number.POSITIVE_INFINITY, live.screenWidth).map(line => (
           <Text color={hex(line.color)}>{line.text || ' '}</Text>
         ))}
       </Box>
