@@ -4,6 +4,10 @@ A tiny pixel theater above your Claude Code prompt. Little orange Claude sits at
 
 ![agent-theater demo](docs/demo.gif)
 
+### Promo (40 s, sound on)
+
+[![Watch the 40 s promo](docs/promo-poster.png)](docs/agent-theater.mp4)
+
 | Scene | Claude | Monitor |
 |---|---|---|
 | think | thought bubble over his head, then a light bulb when the idea lands | `> _` `thinking...` |
@@ -61,6 +65,14 @@ claude plugin test ./agent-theater/plugins/agent-theater
 ```
 
 The folder is watched, so every save reloads the mod. The art lives in `hooks/stage.ts`; the hooks, timers and narration in `hooks/register.tsx`.
+
+The promo is a [Remotion](https://www.remotion.dev) project in `videos/`. It draws the theater with the mod's own `stage.ts`, so the film matches the terminal frame for frame. Music and sound effects are not in the repo; add your own under `videos/public/bgm/chiptune.wav` and `videos/public/sfx/`, then:
+
+```
+cd videos && npm install
+npx remotion render src/index.ts TheaterWide out/agent-theater-wide.mp4
+npx remotion render src/index.ts TheaterTall out/agent-theater-tall.mp4
+```
 
 ## Uninstall
 
