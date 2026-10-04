@@ -1,0 +1,21 @@
+{
+  "name": "agent-theater",
+  "owner": {
+    "name": "afu-it",
+    "url": "https://github.com/afu-it"
+  },
+  "metadata": {
+    "description": "Claude Code mods by afu-it."
+  },
+  "plugins": [
+    {
+      "name": "agent-theater",
+      "source": "./plugins/agent-theater",
+      "description": "A pixel theater above the prompt: little orange Claude acts out each tool call at a desk while a monitor shows the command and Haiku narrates it.",
+      "version": "1.0.0",
+      "author": { "name": "afu-it" },
+      "license": "MIT",
+      "keywords": ["mod", "animation", "pixel-art", "status"]
+    }
+  ]
+}
